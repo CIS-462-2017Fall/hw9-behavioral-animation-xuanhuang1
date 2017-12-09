@@ -69,10 +69,12 @@ void BehaviorViewer::initializeGui()
 		{ SEPARATION, "Separation" },
 		{ COHESION, "Cohesion" },
 		{ FLOCKING, "Flocking" },
-		{ LEADER, "Leader" }
+		{ LEADER, "Leader" },
+		{ MIRROR, "Mirror" },
+		{ ALL, "All" }
 	};
 
-	m_TwBehaviorType = TwDefineEnum("BehaviorType", beTypeEV, 11);
+	m_TwBehaviorType = TwDefineEnum("BehaviorType", beTypeEV, ALL);
 	TwAddVarCB(m_TwBehaviorBar, "Behavior", m_TwBehaviorType, onSetBehaviorCb, onGetBehaviorCb, this, " ");
 	TwAddVarCB(m_TwBehaviorBar, "Num Agents", TW_TYPE_INT32, onSetNumCharactersCb, onGetNumCharactersCb, this, "");
 	TwAddVarCB(m_TwBehaviorBar, "Num Obstacles", TW_TYPE_INT32, onSetNumObstaclesCb, onGetNumObstaclesCb, this, "");
@@ -82,6 +84,13 @@ void BehaviorViewer::initializeGui()
 	TwAddVarRW(m_TwBehaviorBar, "Radius", TW_TYPE_DOUBLE, &BehaviorController::gAgentRadius, "");
 	TwAddVarRW(m_TwBehaviorBar, "Debug", TW_TYPE_BOOLCPP, &m_DebugDraw, "");
 	TwAddButton(m_TwBehaviorBar, "Reset", onResetCb, this, "");
+
+	TwAddVarRW(m_TwBehaviorBar, "gVelKv", TW_TYPE_DOUBLE, &BehaviorController::gVelKv, "");
+	TwAddVarRW(m_TwBehaviorBar, "gOriKv", TW_TYPE_DOUBLE, &BehaviorController::gOriKv, "");
+	TwAddVarRW(m_TwBehaviorBar, "gOriKp", TW_TYPE_DOUBLE, &BehaviorController::gOriKp, "");
+
+	TwAddVarRW(m_TwBehaviorBar, "KArrival", TW_TYPE_DOUBLE, &BehaviorController::KArrival, "");
+	TwAddVarRW(m_TwBehaviorBar, "KDeparture", TW_TYPE_DOUBLE, &BehaviorController::KDeparture, "");
 
 	//TODO: Add your code here to create additional GUI Variables
 }

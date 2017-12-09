@@ -90,6 +90,8 @@ void BehaviorController::createBehaviors(vector<AActor>& agentList, vector<Obsta
 	m_BehaviorList[LEADER] = new Leader(m_pBehaviorTarget, m_AgentList);
 	m_BehaviorList[FLOCKING] = new Flocking(m_pBehaviorTarget, m_AgentList);
 	m_BehaviorList[AVOID] = new Avoid(m_pBehaviorTarget, m_ObstacleList);
+	m_BehaviorList[MIRROR] = new Mirror(m_pBehaviorTarget, m_AgentList);
+
 }
 
 BehaviorController::~BehaviorController()
@@ -155,23 +157,37 @@ void BehaviorController::control(double deltaT)
 		m_Vdesired = mpActiveBehavior->calcDesiredVel(this);
 		m_Vdesired[1] = 0;
 
+
 		//  force and torque inputs are computed from vd and thetad as follows:
 		//              Velocity P controller : force = mass * Kv * (vd - v)
-		//              Heading PD controller : torque = Inertia * (-Kv * thetaDot -Kp * (thetad - theta))
+		//              Heading PD controller : torque = Inertia * (-Kv * thetaDot +Kp * (thetad - theta))
 		//  where the values of the gains Kv and Kp are different for each controller
 
 		// TODO: insert your code here to compute m_force and m_torque
 
+		m_vd = min(m_Vdesired.Length(), gMaxSpeed);
+		m_thetad = atan2(m_Vdesired[2], m_Vdesired[0]);
+
+		double thetaDiff = m_thetad - m_Euler[1];
+		ClampAngle(thetaDiff);
 
 
+		double w1 = 4/(0.4);
+		gVelKv = 2*w1;
 
+		double w = 4/0.25;
+		gOriKv = 2*w;// 0.002;
+		gOriKp =  w;
 
+		m_force[2] = min(gMass *gVelKv*(m_vd - m_VelB[2]), gMaxForce);
+		m_torque[1] = min(gInertia *(-gOriKv*abs(m_AVelB[1]) + gOriKp*thetaDiff), gMaxTorque);
+		//std::cout << "m_vd " << m_vd  <<" a: " << m_VelB.Length() <<" force: "<<m_force[2] << std::endl;
 
-
-
-
-
-
+		/*std::cout << "thetaDiff "<< thetaDiff << std::endl;
+		std::cout << "thetaDot " << m_AVelB[1] << std::endl;
+		std::cout << "vel " << m_Vel0 << std::endl;
+		std::cout << "m_torque " << m_torque << std::endl;
+		std::cout << "m_Euler " << m_Euler << std::endl;*/
 
 
 		// when agent desired agent velocity and actual velocity < 2.0 then stop moving
@@ -195,7 +211,6 @@ void BehaviorController::control(double deltaT)
 void BehaviorController::act(double deltaT)
 {
 	computeDynamics(m_state, m_controlInput, m_stateDot, deltaT);
-	
 	int EULER = 0;
 	int RK2 = 1;
 	updateState(deltaT, EULER);
@@ -212,9 +227,26 @@ void BehaviorController::computeDynamics(vector<vec3>& state, vector<vec3>& cont
 	// Compute the stateDot vector given the values of the current state vector and control input vector
 	// TODO: add your code here
 
+	// m_stateDot[0] = m_Vel0 = [ Vx 0 Vz]T for the 2D planar case
+	// m_stateDot[1] = m_AVelB = [ 0 thetaDot 0]T for the 2D planar case
+	// m_stateDot[2] = body acceleration = [ accelx 0 accelz]T for the 2D planar case
+	// m_stateDot[3] = body angular acceleration = = [ 0 thetaDot2 0]T for the 2D planar case
+	stateDot[2] = force / gMass;
+	stateDot[3] = torque / gInertia;
+	//std::cout << "force CD " << stateDot[2] << std::endl;
+	//std::cout << "thetaDot CD " << stateDot[3] << std::endl;
 
+	// m_avelb = thetadot
+	stateDot[1] = state[3];
 
+	//std::cout << "veldelta " << stateDot[0] << std::endl;
 
+	float theta = state[1][1];
+	//float x = m_VelB[0];
+	float z = state[2][2];
+	m_Vel0[0] = cos(theta)*z;
+	m_Vel0[2] = sin(theta)*z;
+	stateDot[0] = m_Vel0;
 
 }
 
@@ -225,11 +257,35 @@ void BehaviorController::updateState(float deltaT, int integratorType)
 
 	// TODO: add your code here
 	
+	if (integratorType == 0) {
+		m_state[0] += m_stateDot[0];
+		//std::cout << "m_state[0]+m_stateDot[0] " << m_state[0] << " + " << m_stateDot[0] << std::endl;
+		//theta = theta+thetaDot
+		m_state[1] += m_stateDot[1];
+		//velB = velB + acc*tiem
+		m_state[2] += m_stateDot[2]*deltaT;
+		//thetaDot = accA*time
+		m_state[3] = m_stateDot[3]*deltaT;
+		//std::cout << "vel " << m_state[2] << std::endl;
+		//std::cout << "velA " << m_state[3] << std::endl;
 
 
 
+	}else if(integratorType == 1){
+		vector<vec3> xp, xpDot,ctrlInput;
+		for (int i = 0; i < 4; i++)
+			xpDot.push_back(0);
+		xp.push_back(m_state[0] + m_stateDot[0]);
+		xp.push_back(m_state[1] + m_stateDot[1]);
+		xp.push_back(m_state[2] + m_stateDot[2]);
+		xp.push_back(m_state[3] + m_stateDot[3]);
+		ctrlInput.push_back(m_force);
+		ctrlInput.push_back(m_torque);
 
-
+		computeDynamics(xp,ctrlInput, xpDot, deltaT);
+		for (int i = 0; i < 4; i++)
+			m_state[i] = m_state[i] + (m_stateDot[i] + xpDot[i])*deltaT / 2;
+	}
 
 
 	//  given the new values in m_state, these are the new component state values 
@@ -240,14 +296,16 @@ void BehaviorController::updateState(float deltaT, int integratorType)
 
 	//  Perform validation check to make sure all values are within MAX values
 	// TODO: add your code here
+	float currentSpeed = min(m_VelB.Length(), gMaxSpeed);
+	float currentAnVel = min(m_AVelB.Length(), gMaxAngularSpeed);
+	m_VelB.Normalize();
+	m_VelB *= currentSpeed;
+	m_AVelB.Normalize();
+	m_AVelB *= currentAnVel;
 
+	ClampAngle(m_Euler[1]);
 
-
-
-
-
-
-
+	//std::cout << m_Euler << std::endl;
 	// update the guide orientation
 	// compute direction from nonzero velocity vector
 	vec3 dir;

@@ -12,7 +12,7 @@
 using namespace std;
 
 // Behavior Type is global
-enum BehaviorType { SEEK, FLEE, ARRIVAL, DEPARTURE, AVOID, WANDER, ALIGNMENT, SEPARATION, COHESION, FLOCKING, LEADER };
+enum BehaviorType { SEEK, FLEE, ARRIVAL, DEPARTURE, AVOID, WANDER, ALIGNMENT, SEPARATION, COHESION, FLOCKING, LEADER, MIRROR,ALL };
 
 // state vector indices
 #define POS  0
