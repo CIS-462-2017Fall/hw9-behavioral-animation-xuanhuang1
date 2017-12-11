@@ -1,4 +1,7 @@
 ﻿  aActor.cpp
   aBVHController.cpp
+  aJoint.cpp
+  aSkeleton.cpp
+  aTransform.cpp
   Generating Code...
   libassignment2b.vcxproj -> C:\Users\adminX\Documents\CS462\hw9-behavioral-animation-xuanhuang1\HW9 - AnimationToolkit - 2017\libsrc\animation\..\..\lib\libassignment2bd.lib

@@ -171,23 +171,22 @@ void BehaviorController::control(double deltaT)
 		double thetaDiff = m_thetad - m_Euler[1];
 		ClampAngle(thetaDiff);
 
-
 		double w1 = 4/(0.4);
-		gVelKv = 2*w1;
+		gVelKv = w1;
 
 		double w = 4/0.25;
-		gOriKv = 2*w;// 0.002;
-		gOriKp =  w;
+		gOriKv = 2*w;
+		gOriKp =  w*w;
 
 		m_force[2] = min(gMass *gVelKv*(m_vd - m_VelB[2]), gMaxForce);
-		m_torque[1] = min(gInertia *(-gOriKv*abs(m_AVelB[1]) + gOriKp*thetaDiff), gMaxTorque);
+		m_torque[1] = min(gInertia *(gOriKv*m_AVelB[1] + gOriKp*thetaDiff), gMaxTorque);
 		//std::cout << "m_vd " << m_vd  <<" a: " << m_VelB.Length() <<" force: "<<m_force[2] << std::endl;
 
-		/*std::cout << "thetaDiff "<< thetaDiff << std::endl;
-		std::cout << "thetaDot " << m_AVelB[1] << std::endl;
-		std::cout << "vel " << m_Vel0 << std::endl;
-		std::cout << "m_torque " << m_torque << std::endl;
-		std::cout << "m_Euler " << m_Euler << std::endl;*/
+		/*std::cout << "thetaDiff "<< thetaDiff << std::endl;*/
+		//std::cout << "thetaDot " << m_AVelB[1] << std::endl;
+		//std::cout << "vel " << m_Vel0 << std::endl;
+		//std::cout << "m_torque " << m_torque << std::endl;
+		/*std::cout << "m_Euler " << m_Euler << std::endl;*/
 
 
 		// when agent desired agent velocity and actual velocity < 2.0 then stop moving
@@ -236,13 +235,11 @@ void BehaviorController::computeDynamics(vector<vec3>& state, vector<vec3>& cont
 	//std::cout << "force CD " << stateDot[2] << std::endl;
 	//std::cout << "thetaDot CD " << stateDot[3] << std::endl;
 
-	// m_avelb = thetadot
 	stateDot[1] = state[3];
 
-	//std::cout << "veldelta " << stateDot[0] << std::endl;
 
 	float theta = state[1][1];
-	//float x = m_VelB[0];
+
 	float z = state[2][2];
 	m_Vel0[0] = cos(theta)*z;
 	m_Vel0[2] = sin(theta)*z;
@@ -258,18 +255,14 @@ void BehaviorController::updateState(float deltaT, int integratorType)
 	// TODO: add your code here
 	
 	if (integratorType == 0) {
-		m_state[0] += m_stateDot[0];
+		m_state[0] += m_stateDot[0]*deltaT;
 		//std::cout << "m_state[0]+m_stateDot[0] " << m_state[0] << " + " << m_stateDot[0] << std::endl;
 		//theta = theta+thetaDot
-		m_state[1] += m_stateDot[1];
+		m_state[1] += m_stateDot[1]*deltaT;
 		//velB = velB + acc*tiem
 		m_state[2] += m_stateDot[2]*deltaT;
 		//thetaDot = accA*time
 		m_state[3] = m_stateDot[3]*deltaT;
-		//std::cout << "vel " << m_state[2] << std::endl;
-		//std::cout << "velA " << m_state[3] << std::endl;
-
-
 
 	}else if(integratorType == 1){
 		vector<vec3> xp, xpDot,ctrlInput;
