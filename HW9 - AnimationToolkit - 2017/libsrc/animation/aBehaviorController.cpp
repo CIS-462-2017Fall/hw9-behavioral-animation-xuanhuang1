@@ -179,7 +179,7 @@ void BehaviorController::control(double deltaT)
 		gOriKp =  w*w;
 
 		m_force[2] = min(gMass *gVelKv*(m_vd - m_VelB[2]), gMaxForce);
-		m_torque[1] = min(gInertia *(gOriKv*m_AVelB[1] + gOriKp*thetaDiff), gMaxTorque);
+		m_torque[1] = min(gInertia *(-gOriKv*m_AVelB[1] + gOriKp*thetaDiff), gMaxTorque);
 		//std::cout << "m_vd " << m_vd  <<" a: " << m_VelB.Length() <<" force: "<<m_force[2] << std::endl;
 
 		/*std::cout << "thetaDiff "<< thetaDiff << std::endl;*/
@@ -262,7 +262,7 @@ void BehaviorController::updateState(float deltaT, int integratorType)
 		//velB = velB + acc*tiem
 		m_state[2] += m_stateDot[2]*deltaT;
 		//thetaDot = accA*time
-		m_state[3] = m_stateDot[3]*deltaT;
+		m_state[3] += m_stateDot[3]*deltaT;
 
 	}else if(integratorType == 1){
 		vector<vec3> xp, xpDot,ctrlInput;
